@@ -28,8 +28,10 @@ void KMainWindow::initWindow()
     QLineEdit* m_pInputEdit = new QLineEdit(this);
     QPushButton* m_pGenerateRSAKeyPairBtn = new QPushButton(QStringLiteral("Éú³ÉRSAÃÜÔ¿¶Ô"), this);
     QPushButton* m_pRunBtn = new QPushButton("run", this);
+    m_pRunBtn->setEnabled(false);
     QLineEdit* m_pAESInputEdit = new QLineEdit(this);
     QPushButton* m_pAESRunBtn = new QPushButton("run", this);
+    m_pAESRunBtn->setEnabled(false);
     QPlainTextEdit* m_pEncryptEdit = new QPlainTextEdit(this);
     QPlainTextEdit* m_pDecryptEdit = new QPlainTextEdit(this);
 
@@ -49,6 +51,13 @@ void KMainWindow::initWindow()
     m_pVMainLay->addLayout(m_pHAESLay);
     m_pVMainLay->addWidget(m_pEncryptEdit);
     m_pVMainLay->addWidget(m_pDecryptEdit);
+
+    (void)connect(m_pInputEdit, &QLineEdit::textChanged, this, [=]() {
+        m_pRunBtn->setEnabled(!m_pInputEdit->text().isEmpty());
+    });
+    (void)connect(m_pAESInputEdit, &QLineEdit::textChanged, this, [=]() {
+        m_pAESRunBtn->setEnabled(!m_pAESInputEdit->text().isEmpty());
+    });
 
     (void)connect(m_pGenerateRSAKeyPairBtn, &QPushButton::clicked, this, [&]() {
         KRsa rsa;

@@ -44,26 +44,24 @@ QString KRsa::rsaPubEncrypt(const QString& strPlainData, const QString& strPubKe
         slice++;
 
     QByteArray arry;
-    char* pEncryptBuf = new char[nLen];   //创建一个用于存储加密后数据的缓冲区
+    uchar* pEncryptBuf = new uchar[nLen];   //创建一个用于存储加密后数据的缓冲区
     for (int i = 0; i < slice; i++)
     {
         QByteArray baData = plainDataArry.mid(i * exppadding, exppadding);
         nPlainDataLen = baData.length();
         memset(pEncryptBuf, 0, nLen);
         uchar* pPlainData = (uchar*)baData.data();
-        int nSize = RSA_public_encrypt(nPlainDataLen, pPlainData, (uchar*)pEncryptBuf, pRsa, RSA_PKCS1_PADDING);
+        int nSize = RSA_public_encrypt(nPlainDataLen, pPlainData, pEncryptBuf, pRsa, RSA_PKCS1_PADDING);
         if (nSize >= 0)
-            arry.append(QByteArray(pEncryptBuf, nSize));
+            arry.append(QByteArray(reinterpret_cast<const char*>(pEncryptBuf), nSize));
     }
 
-    QString strEncryptData = "";
-    strEncryptData += arry.toBase64();
     //释放内存
     delete[] pEncryptBuf;
     BIO_free_all(pKeyBio);
     RSA_free(pRsa);
 
-    return strEncryptData;
+    return arry.toBase64();
 }
 
 QString KRsa::rsaPriDecrypt(const QString& strDecryptData, const QString& strPriKey)
@@ -83,7 +81,6 @@ QString KRsa::rsaPriDecrypt(const QString& strDecryptData, const QString& strPri
     }
 
     int nLen = RSA_size(pRsa);
-    char* pPlainBuf = new char[nLen];
 
     //解密
     QByteArray decryptDataArry = strDecryptData.toUtf8();
@@ -95,16 +92,17 @@ QString KRsa::rsaPriDecrypt(const QString& strDecryptData, const QString& strPri
     if (nDecryptDataLen % (rsasize))
         slice++;
 
-    QString strPlainData = "";
+    QByteArray plainDataArry;
+    uchar* pPlainBuf = new uchar[nLen];
     for (int i = 0; i < slice; i++)
     {
         QByteArray baData = decryptDataArry.mid(i * rsasize, rsasize);
         nDecryptDataLen = baData.length();
         memset(pPlainBuf, 0, nLen);
         uchar* pDecryptData = (uchar*)baData.data();
-        int nSize = RSA_private_decrypt(nDecryptDataLen, pDecryptData, (uchar*)pPlainBuf, pRsa, RSA_PKCS1_PADDING);
+        int nSize = RSA_private_decrypt(nDecryptDataLen, pDecryptData, pPlainBuf, pRsa, RSA_PKCS1_PADDING);
         if (nSize >= 0) 
-            strPlainData += QByteArray(pPlainBuf, nSize);
+            plainDataArry.append(QByteArray(reinterpret_cast<const char*>(pPlainBuf), nSize));
     }
 
     //释放内存
@@ -112,7 +110,7 @@ QString KRsa::rsaPriDecrypt(const QString& strDecryptData, const QString& strPri
     BIO_free_all(pKeyBio);
     RSA_free(pRsa);
 
-    return strPlainData;
+    return QString::fromUtf8(plainDataArry);
 }
 
 void KRsa::generateRSAKeyPair()
